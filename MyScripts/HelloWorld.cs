@@ -63,6 +63,7 @@ public class PlayerController : MonoBehaviour
         // Translate    Moves the transform in the direction & distance of translatation (x, y, z)
         // transform.Translate(Vector3.forward);   // Cleaner way to write the above code.
         // forward is a preconfigured Vector3 for 0, 0, 1.
+        // transform.Translate(Vector3.back * speed);   // Moves backwards times speed.
         // transform.Translate(Vector3.forward * Time.deltaTime * 20);     // Moves forward 20 meters every second.
         // Time.deltaTime   Gets the change in time between each frame to change update from every frame to every second.
         // transform.Translate(Vector3.forward * Time.deltaTime * speed);  // Replaced hardcoded 20 with variable speed for clean code.
@@ -86,12 +87,6 @@ public class FollowPlayer : MonoBehaviour
     private float horizontalInput;
     private float turnSpeed = 50.0f;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-
-    }
-
     // LateUpdate is called after Update() runs to make the camera run smoother & remove jittering caused by PlayerController & FollowPlayer both using Update().
     void LateUpdate()
     {
@@ -105,3 +100,96 @@ public class FollowPlayer : MonoBehaviour
     }
 }
 
+// Camera Control Scripts not covered in tutorial. Info found at https://code.tutsplus.com/tutorials/unity3d-third-person-cameras--mobile-11230
+
+// Look at camera: ( Camera doesn't move location but follows player like a turrent.)
+
+public class LookAtCamera : MonoBehaviour
+{
+    public GameObject target;   // This needs to be set in Inspector to tell the camera what to focus on.
+
+    void LateUpdate()
+    {
+        transform.LookAt(target.transform);     // Tells the camera to follow targets location.
+    }
+}
+
+// Dungeon crawler camera: ( Sits above player & moves relative to player but never rotates.)
+
+public class DungeonCamera : MonoBehaviour
+{
+    public GameObject target;   // This needs to be set in Inspector to tell the camera what to focus on.
+    Vector3 offset;
+    public float damping = 1;   // Dampen the movement slightly so that it takes some time to catch up to the player.
+
+    void Start()
+    {
+        offset = transform.position - target.transform.position;    // Calculates offset when script is first run.
+    }
+
+    void LateUpdate()
+    {
+        // Update the camera's position based on the player's position by applying the offset.
+        Vector3 desiredPosition = target.transform.position + offset;
+        transform.position = desiredPosition;
+
+        Vector3 position = Vector3.Lerp(transform.position, desiredPosition, Time.deltaTime * damping);     // Dampen position between 2 points: current position and desired position.
+        // Vector3.Lerp() method - Lerp linearly interpolates between two points, meaning it smoothly transitions from one point to another in a straight line.
+
+        transform.LookAt(target.transform.position);    // Tells the camera to follow targets location.
+    }
+}
+
+// The Follow Camera: ( Sits above & behind player & rotates around player as they turn.)
+
+public class FollowCamera : MonoBehaviour
+{
+    public GameObject target;
+    public float damping = 1;
+    Vector3 offset;
+
+    void Start()
+    {
+        offset = target.transform.position - transform.position;    // Only calculates offset when script is 1st run so it doesn't effect rotation.
+    }
+
+    void LateUpdate()
+    {
+        float currentAngle = transform.eulerAngles.y;   // Gets current angle on y axis.
+        float desiredAngle = target.transform.eulerAngles.y;    // Gets the angle of the target.
+        float angle = Mathf.LerpAngle(currentAngle, desiredAngle, damping);    // Lerps between angle of camera & angle of player & applies damping.
+        // Mathf.LerpAngle() - Method used to lerp between angles instead of position.
+
+        Quaternion rotation = Quaternion.Euler(0, angle, 0);    // Turns the angle of target into rotation.
+        transform.position = target.transform.position - (rotation * offset);   // Multiplies offset by rotation to orient offset same as target & subtract the result from target position.
+
+        transform.LookAt(target.transform);     // Keep looking at the player.
+    }
+}
+
+// The Mouse Aim Camera: (Similar to Follow camera but rotation is controlled my mouse movement which points player in direction the camera is facing.)
+
+public class MouseAimCamera : MonoBehaviour
+{
+    public GameObject target;
+    public float rotateSpeed = 5;   // Rotation speed of camera as mouse moves.
+    Vector3 offset;
+
+    void Start()
+    {
+        offset = target.transform.position - transform.position;
+    }
+
+    void LateUpdate()
+    {
+        float horizontal = Input.GetAxis("Mouse X") * rotateSpeed;  // Accesses horizontal axis of mouse.
+        target.transform.Rotate(0, horizontal, 0);  // Uses horizontal axis of mouse to rotate player. 
+
+        // Orient offset in same direction & subtract from targets position to keep the camera behind the player:
+        float desiredAngle = target.transform.eulerAngles.y;
+        Quaternion rotation = Quaternion.Euler(0, desiredAngle, 0);
+        transform.position = target.transform.position - (rotation * offset);
+
+        transform.LookAt(target.transform);
+    }
+}
