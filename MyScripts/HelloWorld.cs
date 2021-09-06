@@ -45,7 +45,7 @@ public class HelloWorld : MonoBehaviour     // This must always match name of th
     }
 }
 
-// My 2nd Script written:
+// My 2nd Script written: (Written for Unity Junior Programmer Pathway Prototype1)
 public class PlayerController : MonoBehaviour
 {
     private float speed = 10.0f;      // Variable to allow setting vehicle speed in Inspector.
@@ -83,9 +83,9 @@ public class FollowPlayer : MonoBehaviour
     public GameObject player;   // Allows setting an object to be player in Inspector.
     private Vector3 offset = new Vector3(0.13f, 8, -7);     // Sets camera above & behind player position. (If using decimals must use f for float after number.)
 
-    //Variables to move camera with player keeping view forward:
-    private float horizontalInput;
-    private float turnSpeed = 50.0f;
+    //Variables to move camera with player keeping view forward: (Attempted but not correct way to accomplish)
+    //private float horizontalInput;
+    //private float turnSpeed = 50.0f;
 
     // LateUpdate is called after Update() runs to make the camera run smoother & remove jittering caused by PlayerController & FollowPlayer both using Update().
     void LateUpdate()
@@ -95,10 +95,86 @@ public class FollowPlayer : MonoBehaviour
         transform.position = player.transform.position + offset;    // Clean code way to write above using private variable set above.
 
         // Rotate camera with vehicle: (Only if 1st person view, doesn't work in 3rd person with offset.)
-        horizontalInput = Input.GetAxis("Horizontal");
+        //horizontalInput = Input.GetAxis("Horizontal");
         // transform.Rotate(Vector3.up, turnSpeed * horizontalInput * Time.deltaTime);     // This would work on 1st person but as its on 3rd person it rotates on offset so no good.
     }
 }
+
+//Written for Prototype1 Bonus Challenges:
+
+public class OncomingVehicles : MonoBehaviour
+{
+    private float speed = 5.0f; //Controls speed of oncoming vehicles.
+
+    // Update is called once per frame
+    void Update()
+    {
+        transform.Translate(Vector3.forward * speed * Time.deltaTime);  //Moves object script is attached to forward x speed x ever second.
+    }
+}
+
+//Updated PlayerController to include switching camera from 3rd person view to 1st person view:
+public class PlayerController : MonoBehaviour
+{
+    private float speed = 15.0f;      // Variable to allow setting vehicle speed in Inspector.
+    private float turnSpeed = 50.0f;     // Inspector adjustable variable to turn vehicle.
+    private float horizontalInput;   // Uses Edit> Project Settings> Input Manager> Axes to input for left, right movement.
+    private float forwardInput;      // Allows assignment of forward, backward Player input.
+    // Changed all variables above from public to private because once set there is no need to access them in Inspector & we don't want anything else changing them.
+
+    // 3rd Person view to 1st person view:
+    public Camera mainCamera;
+    public Camera fpvCamera;
+    public KeyCode switchKey;
+
+    // Update is called once per frame
+    void Update()
+    {
+        // transform.Translate(0, 0, 1);    // Move the vehicle forward.
+        // Translate    Moves the transform in the direction & distance of translatation (x, y, z)
+        // transform.Translate(Vector3.forward);   // Cleaner way to write the above code.
+        // forward is a preconfigured Vector3 for 0, 0, 1.
+        // transform.Translate(Vector3.forward * Time.deltaTime * 20);     // Moves forward 20 meters every second.
+        // Time.deltaTime   Gets the change in time between each frame to change update from every frame to every second.
+        // transform.Translate(Vector3.forward * Time.deltaTime * speed);  // Replaced hardcoded 20 with variable speed for clean code.
+        // transform.Translate(Vector3.right * Time.deltaTime * turnSpeed);    // Uses turnSpeed variable to turn right.
+        // transform.Translate(Vector3.right * Time.deltaTime * turnSpeed * horizontalInput);  // Uses Player input to move right or left using variable. (Slides doesn't rotate)
+        transform.Translate(Vector3.forward * Time.deltaTime * speed * forwardInput);   // Uses Player input to move forward or backward so now only moves when Player hits key.
+        transform.Rotate(Vector3.up, turnSpeed * horizontalInput * Time.deltaTime);     // Rotates the vehicle for more realism so not just sliding side to side.
+
+        horizontalInput = Input.GetAxis("Horizontal");  // Assigns horizontalInput variable to Player input on horizontal axis. (This was put at Top of Update() but didn't say why, works fine here.)
+        forwardInput = Input.GetAxis("Vertical");   // Assigns forwardInput variable to Player input on vertical axis.
+
+        // 3rd Person view to 1st person view:
+        if (Input.GetKeyDown(switchKey))
+        {
+            mainCamera.enabled = !mainCamera.enabled;
+            fpvCamera.enabled = !fpvCamera.enabled;
+        }
+    }
+}
+
+//First Person View Camera controller:
+
+public class FPVFollowPlayer : MonoBehaviour
+{
+    public GameObject player;   // GameObject for camera to follow.
+    private Vector3 offset = new Vector3(0, 4.3f, 0);   //Offset to position camera above player object.
+
+    private float horizontalInput;  //Variable to store left, right input from player.
+    private float turnSpeed = 50.0f;    //Speed to turn as player presses input.
+
+    void LateUpdate()
+    {
+        transform.position = player.transform.position + offset;    //Starting position of camera.
+        horizontalInput = Input.GetAxis("Horizontal");  //Uses the Horizontal axis set in Unity to control left, right movement.
+        transform.Rotate(Vector3.up * horizontalInput * turnSpeed * Time.deltaTime);    //Rotates camera based on left, right player input times turnSpeed times once a second.
+    }
+}
+
+// Need to find better way to control camera for 3rd person view.
+
+//Replaced FollowPlayer script with FollowCamera script listed below for better 3rd person view control.
 
 // Camera Control Scripts not covered in tutorial. Info found at https://code.tutsplus.com/tutorials/unity3d-third-person-cameras--mobile-11230
 
@@ -141,29 +217,38 @@ public class DungeonCamera : MonoBehaviour
 }
 
 // The Follow Camera: ( Sits above & behind player & rotates around player as they turn.)
+// Camera used in Unity Prototype1 Bonus challenges:
 
 public class FollowCamera : MonoBehaviour
 {
-    public GameObject target;
+    public GameObject player;
     public float damping = 1;
     Vector3 offset;
 
     void Start()
     {
-        offset = target.transform.position - transform.position;    // Only calculates offset when script is 1st run so it doesn't effect rotation.
+        //Original code from notes. Doesn't accomplish what I'm trying to do (positioning is off):
+        //offset = player.transform.position - transform.position;    // Calculates offset when script is 1st run based on targets position - position of object script is attached to.
+
+        //Assigned offset to attempt more control over camera position but doesn't seem to set exactly how intended:
+        offset = new Vector3(0, -11, 1); //Working almost how I want but camera is too far back & not sure why values change as they do.
     }
 
     void LateUpdate()
     {
         float currentAngle = transform.eulerAngles.y;   // Gets current angle on y axis.
-        float desiredAngle = target.transform.eulerAngles.y;    // Gets the angle of the target.
+        float desiredAngle = player.transform.eulerAngles.y;    // Gets the angle of the target.
+        //float angle = Mathf.LerpAngle(currentAngle, desiredAngle, Time.deltaTime * damping);
+        //Had to remove Time.deltaTime because on Play the camera just continously rotated around target.
         float angle = Mathf.LerpAngle(currentAngle, desiredAngle, damping);    // Lerps between angle of camera & angle of player & applies damping.
         // Mathf.LerpAngle() - Method used to lerp between angles instead of position.
 
-        Quaternion rotation = Quaternion.Euler(0, angle, 0);    // Turns the angle of target into rotation.
-        transform.position = target.transform.position - (rotation * offset);   // Multiplies offset by rotation to orient offset same as target & subtract the result from target position.
+        //Original notes but positioning off:
+        //Quaternion rotation = Quaternion.Euler(0, angle, 0);    // Turns the angle of target into rotation.
+        Quaternion rotation = Quaternion.Euler(-55, angle, -5); //Working. Had to set x & z axis to correct camera angle.
+        transform.position = player.transform.position - (rotation * offset);   // Multiplies offset by rotation to orient offset same as target & subtract the result from target position.
 
-        transform.LookAt(target.transform);     // Keep looking at the player.
+        transform.LookAt(player.transform);     // Keep camera looking at the player.
     }
 }
 
