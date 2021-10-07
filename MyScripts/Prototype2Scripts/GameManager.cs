@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using TMPro;
+using UnityEngine.UI;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -11,12 +12,14 @@ using UnityEditor;
 public class GameManager : MonoBehaviour
 {
     //Score & Lives Tracker:
-    private int lives = 3;    //How many lives the player starts with.
+    public int lives = 3;    //How many lives the player starts with.
     private int score = 0;    //The starting score.
 
     //These allow you to target on screen text to change:
     public TextMeshProUGUI livesDisplay;
     public TextMeshProUGUI scoreDisplay;
+
+    public Slider healthBarSlider;  //Allows targeting a Slider game object.
 
     // Start is called before the first frame update
     void Start()
@@ -29,6 +32,8 @@ public class GameManager : MonoBehaviour
         //These 2 tell you how to update on screen text:
         livesDisplay.text = "Lives: " + lives;
         scoreDisplay.text = "Score: " + score;
+
+        healthBarSlider.value = lives;      //Updates Health Bar Slider based on current lives.
     }
 
     public void AddLives(int value)     //Takes in a value & updates it's variable.
@@ -84,7 +89,7 @@ public class GameManager : MonoBehaviour
 #if UNITY_EDITOR
         EditorApplication.ExitPlaymode();
 #else
-ApplicationQuit();
+//ApplicationQuit();
 #endif
     }
 
